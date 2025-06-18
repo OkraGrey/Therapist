@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+
+{% block title %}Create New Form - The Therapist{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>Create New Form</h1>
+                <a href="{% url 'admin_dashboard:dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+
+            <form method="post" id="formCreationForm">
+                {% csrf_token %}
+
+                <!-- Form Details Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h2 class="mb-0">Form Details</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="form_name" class="form-label">Form Name *</label>
+                            <input type="text" class="form-control" id="form_name" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="form_description" class="form-label">Description</label>
+                            <textarea class="form-control" id="form_description" name="description" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Questions Card -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h2 class="mb-0">Questions</h2>
+                        <button type="button" class="btn btn-success" onclick="addQuestion()">
+                            <i class="fas fa-plus"></i> Add Question
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="questionsContainer">
+                            <!-- Questions will be added here dynamically -->
+                        </div>
+                        <div id="noQuestionsMessage" class="text-center py-4">
+                            <i class="fas fa-question-circle fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">No questions added yet. Click "Add Question" to get started.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Form
+                    </button>
+                    <a href="{% url 'admin_dashboard:dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Question Template (hidden) -->
+<template id="questionTemplate">
+    <div class="question-item card mb-3" data-question-index="">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <h5 class="card-title mb-0">Question <span class="question-number"></span></h5>
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeQuestion(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="mb-3">
+                        <label class="form-label">Question Text *</label>
+                        <input type="text" class="form-control question-text" name="questions[][text]" required>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">Question Type *</label>
+                        <select class="form-select question-type" name="questions[][type]"
+                            onchange="handleQuestionTypeChange(this)" required>
+                            <option value="text">Text-based answer</option>
+                            <option value="choice">Choose one from multi options</option>
+                            <option value="range">Pick one number from the range of 1-5</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input class="form-check-input question-mandatory" type="checkbox"
+                            name="questions[][is_mandatory]">
+                        <label class="form-check-label">
+                            This question is mandatory
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Choice Options Section (initially hidden) -->
+            <div class="choice-options-section mt-3" style="display: none;">
+                <label class="form-label">Choice Options *</label>
+                <div class="choice-options-container">
+                    <div class="choice-option-item mb-2">
+                        <div class="input-group">
+                            <input type="text" class="form-control choice-option-text" name="questions[][choices][]"
+                                placeholder="Enter option text">
+                            <button type="button" class="btn btn-outline-danger" onclick="removeChoiceOption(this)">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="addChoiceOption(this)">
+                    <i class="fas fa-plus"></i> Add Option
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let questionCounter = 0;
+
+    function addQuestion() {
+        const template = document.getElementById('questionTemplate');
+        const questionContainer = document.getElementById('questionsContainer');
+        const noQuestionsMessage = document.getElementById('noQuestionsMessage');
+
+        // The new index is always the number of current questions + 1
+        const newIndex = questionContainer.querySelectorAll('.question-item').length + 1;
+
+        // Clone the template
+        const questionElement = template.content.cloneNode(true);
+        const questionItem = questionElement.querySelector('.question-item');
+
+        // Set question index and number
+        questionItem.dataset.questionIndex = newIndex;
+        questionItem.querySelector('.question-number').textContent = newIndex;
+
+        // Update input names with proper indexing
+        questionItem.querySelectorAll('input, select').forEach(input => {
+            if (input.name) {
+                input.name = input.name.replace('[]', `[${newIndex}]`);
+            }
+        });
+
+        // Add to container
+        questionContainer.appendChild(questionElement);
+
+        // Hide no questions message
+        noQuestionsMessage.style.display = 'none';
+    }
+
+    function renumberQuestions() {
+        const questions = document.querySelectorAll('.question-item');
+        questions.forEach((item, index) => {
+            const newIndex = index + 1;
+            item.querySelector('.question-number').textContent = newIndex;
+            item.dataset.questionIndex = newIndex;
+            // Update all input/select names inside this question
+            item.querySelectorAll('input, select').forEach(input => {
+                if (input.name) {
+                    input.name = input.name.replace(/questions\[\d+\]/, `questions[${newIndex}]`);
+                }
+            });
+        });
+    }
+
+    function removeQuestion(button) {
+        const questionItem = button.closest('.question-item');
+        questionItem.remove();
+
+        // Show no questions message if no questions left
+        const questions = document.querySelectorAll('.question-item');
+        if (questions.length === 0) {
+            document.getElementById('noQuestionsMessage').style.display = 'block';
+        } else {
+            renumberQuestions();
+        }
+    }
+
+    function handleQuestionTypeChange(select) {
+        const questionItem = select.closest('.question-item');
+        const choiceOptionsSection = questionItem.querySelector('.choice-options-section');
+
+        if (select.value === 'choice') {
+            choiceOptionsSection.style.display = 'block';
+        } else {
+            choiceOptionsSection.style.display = 'none';
+        }
+    }
+
+    function addChoiceOption(button) {
+        const questionItem = button.closest('.question-item');
+        const container = questionItem.querySelector('.choice-options-container');
+
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'choice-option-item mb-2';
+        optionDiv.innerHTML = `
+        <div class="input-group">
+            <input type="text" class="form-control choice-option-text" name="questions[${questionItem.dataset.questionIndex}][choices][]" placeholder="Enter option text">
+            <button type="button" class="btn btn-outline-danger" onclick="removeChoiceOption(this)">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+
+        container.appendChild(optionDiv);
+    }
+
+    function removeChoiceOption(button) {
+        const optionItem = button.closest('.choice-option-item');
+        optionItem.remove();
+    }
+
+    // Form validation
+    document.getElementById('formCreationForm').addEventListener('submit', function (e) {
+        const questions = document.querySelectorAll('.question-item');
+
+        if (questions.length === 0) {
+            e.preventDefault();
+            alert('Please add at least one question to the form.');
+            return;
+        }
+
+        // Validate choice questions have options
+        questions.forEach(question => {
+            const typeSelect = question.querySelector('.question-type');
+            if (typeSelect.value === 'choice') {
+                const choiceInputs = question.querySelectorAll('.choice-option-text');
+                const hasValidOptions = Array.from(choiceInputs).some(input => input.value.trim() !== '');
+
+                if (!hasValidOptions) {
+                    e.preventDefault();
+                    alert('Choice questions must have at least one option.');
+                    return;
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - The Therapist{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>Admin Dashboard</h1>
+                <a href="{% url 'forms:create_form' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add New Form
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">Existing Forms</h2>
+                </div>
+                <div class="card-body">
+                    {% if forms %}
+                    <div class="row">
+                        {% for form in forms %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ form.name }}</h5>
+                                    <p class="card-text text-muted">
+                                        {% if form.description %}
+                                        {{ form.description|truncatewords:20 }}
+                                        {% else %}
+                                        No description provided
+                                        {% endif %}
+                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            Created: {{ form.created_at|date:"M d, Y" }}
+                                        </small>
+                                        <a href="#" class="btn btn-sm btn-outline-primary">View</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No forms created yet</h4>
+                        <p class="text-muted">Get started by creating your first form</p>
+                        <a href="{% url 'forms:create_form' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create Your First Form
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

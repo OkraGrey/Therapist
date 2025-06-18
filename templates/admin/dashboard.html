@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - The Therapist{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Admin Dashboard</h1>
+    <p>Welcome, {{ request.user.first_name }}!</p>
+    <div class="mt-4">
+        <h2>Existing Forms</h2>
+        <div class="forms-grid">
+            <!-- Forms will be listed here in Phase 2 -->
+            <p>No forms created yet.</p>
+        </div>
+        <button class="btn mt-3">Add New Form</button>
+    </div>
+</div>
+{% endblock %}

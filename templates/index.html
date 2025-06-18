@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}The Therapist - Welcome{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="hero-content">
+        <h1 class="hero-title">Welcome to The Therapist</h1>
+        <p class="hero-description">
+            A comprehensive platform for managing therapeutic forms and patient responses. Our system provides secure,
+            efficient, and user-friendly tools for healthcare professionals.
+        </p>
+        <p class="hero-subtitle">
+            Get started by creating an account or logging in to access the admin dashboard.
+        </p>
+        <div class="hero-buttons">
+            <a href="{% url 'accounts:register' %}" class="btn btn-primary">Sign Up</a>
+            <a href="{% url 'accounts:login' %}" class="btn btn-secondary">Login</a>
+        </div>
+    </div>
+    <div class="hero-background"></div>
+</div>
+{% endblock %}
