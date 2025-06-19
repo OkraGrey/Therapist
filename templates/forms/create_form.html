@@ -1,19 +1,125 @@
 {% extends 'base.html' %}
 
-{% block title %}Create New Form - The Therapist{% endblock %}
+{% block title %}{% if is_edit %}Edit Form{% else %}Create New Form{% endif %} - The Therapist{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Style for select dropdown options */
+    .form-select option {
+        color: #2c3e50;  /* Dark blue-gray color */
+        background-color: #ffffff;  /* White background */
+    }
+
+    /* Style for the select element itself */
+    .form-select {
+        color: #2c3e50;  /* Dark blue-gray color */
+        background-color: #ffffff;  /* White background */
+    }
+
+    /* Style for select when opened/focused */
+    .form-select:focus {
+        color: #2c3e50;
+        background-color: #ffffff;
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+
+    /* Form Input Styles */
+    .form-control, .form-select {
+        background-color: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #ffffff;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus, .form-select:focus {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+        box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.1);
+    }
+
+    .form-control::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    /* Make sure select options are visible */
+    .form-select option {
+        background-color: #1a1f2e;
+        color: #ffffff;
+    }
+
+    /* Style for choice options inputs */
+    .choice-option-item .form-control {
+        background-color: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #ffffff;
+    }
+
+    .choice-option-item .form-control:focus {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Question card styles */
+    .question-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    /* Form section styles */
+    .form-section {
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    /* Labels */
+    .form-label {
+        color: rgba(255, 255, 255, 0.9);
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Required asterisk */
+    .required {
+        color: #ff6b6b;
+        margin-left: 0.25rem;
+    }
+
+    /* Checkbox styles */
+    .form-check-input {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .form-check-input:checked {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+
+    .form-check-label {
+        color: rgba(255, 255, 255, 0.9);
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid px-4">
     <div class="create-form-header">
         <div class="d-flex justify-content-between align-items-center">
-            <h1 class="create-form-title">Create New Form</h1>
+            <h1 class="create-form-title">{% if is_edit %}Edit Form{% else %}Create New Form{% endif %}</h1>
             <a href="{% url 'admin_dashboard:dashboard' %}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Back to Dashboard
             </a>
         </div>
     </div>
 
-    <form method="post" id="formCreationForm" class="create-form">
+    <form method="post" id="formCreationForm" class="create-form" action="{% if is_edit %}{% url 'forms:edit_form' form.id %}{% else %}{% url 'forms:create_form' %}{% endif %}">
         {% csrf_token %}
 
         <!-- Form Details Section -->
@@ -27,11 +133,11 @@
             <div class="form-section-content">
                 <div class="form-group">
                     <label for="form_name" class="form-label">Form Name <span class="required">*</span></label>
-                    <input type="text" class="form-control" id="form_name" name="name" required>
+                    <input type="text" class="form-control" id="form_name" name="name" required value="{{ form.name|default:'' }}">
                 </div>
                 <div class="form-group">
                     <label for="form_description" class="form-label">Description</label>
-                    <textarea class="form-control" id="form_description" name="description" rows="3"></textarea>
+                    <textarea class="form-control" id="form_description" name="description" rows="3">{{ form.description|default:'' }}</textarea>
                 </div>
             </div>
         </div>
@@ -49,9 +155,69 @@
             </div>
             <div class="form-section-content">
                 <div id="questionsContainer">
-                    <!-- Questions will be added here dynamically -->
+                    {% if questions %}
+                        {% for question in questions %}
+                        <div class="question-card" data-question-index="{{ forloop.counter }}">
+                            <div class="question-card-header">
+                                <h3 class="question-number">Question {{ forloop.counter }}</h3>
+                                <button type="button" class="btn btn-icon btn-danger" onclick="removeQuestion(this)" title="Remove Question">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            <div class="question-card-content">
+                                <div class="row g-4">
+                                    <div class="col-md-8">
+                                        <div class="form-group">
+                                            <label class="form-label">Question Text <span class="required">*</span></label>
+                                            <input type="text" class="form-control question-text" name="questions[{{ forloop.counter }}][text]" required value="{{ question.text }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="form-label">Question Type <span class="required">*</span></label>
+                                            <select class="form-select question-type" name="questions[{{ forloop.counter }}][type]" onchange="handleQuestionTypeChange(this)" required>
+                                                <option value="text" {% if question.type == 'text' %}selected{% endif %}>Text-based answer</option>
+                                                <option value="choice" {% if question.type == 'choice' %}selected{% endif %}>Choose one from multi options</option>
+                                                <option value="range" {% if question.type == 'range' %}selected{% endif %}>Pick one number from the range of 1-5</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group mt-3">
+                                    <div class="form-check custom-checkbox">
+                                        <input class="form-check-input question-mandatory" type="checkbox" name="questions[{{ forloop.counter }}][is_mandatory]" {% if question.is_mandatory %}checked{% endif %}>
+                                        <label class="form-check-label">
+                                            This question is mandatory
+                                        </label>
+                                    </div>
+                                </div>
+                                <!-- Choice Options Section -->
+                                <div class="choice-options-section mt-4" {% if question.type != 'choice' %}style="display: none;"{% endif %}>
+                                    <label class="form-label">Choice Options <span class="required">*</span></label>
+                                    <div class="choice-options-container">
+                                        {% if question.type == 'choice' %}
+                                            {% for choice in question.choices.all %}
+                                            <div class="choice-option-item">
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control choice-option-text" name="questions[{{ forloop.parentloop.counter }}][choices][]" value="{{ choice.text }}" placeholder="Enter option text">
+                                                    <button type="button" class="btn btn-icon btn-danger" onclick="removeChoiceOption(this)">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                    <button type="button" class="btn btn-secondary btn-sm mt-3" onclick="addChoiceOption(this)">
+                                        <i class="fas fa-plus"></i> Add Option
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
                 </div>
-                <div id="noQuestionsMessage" class="empty-state">
+                <div id="noQuestionsMessage" class="empty-state" {% if questions %}style="display: none;"{% endif %}>
                     <div class="empty-state-icon">
                         <i class="fas fa-question"></i>
                     </div>
@@ -63,7 +229,7 @@
 
         <div class="form-actions">
             <button type="submit" class="btn">
-                <i class="fas fa-save"></i> Save Form
+                <i class="fas fa-save"></i> {% if is_edit %}Update Form{% else %}Save Form{% endif %}
             </button>
             <a href="{% url 'admin_dashboard:dashboard' %}" class="btn btn-secondary">Cancel</a>
         </div>
@@ -136,7 +302,8 @@
 
 {% block extra_js %}
 <script>
-    let questionCounter = 0;
+    // Initialize question counter based on existing questions
+    let questionCounter = {% if questions %}{{ questions|length }}{% else %}0{% endif %};
 
     function addQuestion() {
         const template = document.getElementById('questionTemplate');
@@ -144,18 +311,18 @@
         const noQuestionsMessage = document.getElementById('noQuestionsMessage');
 
         // The new index is always the number of current questions + 1
-        const newIndex = questionContainer.querySelectorAll('.question-item').length + 1;
+        const newIndex = questionContainer.querySelectorAll('.question-card').length + 1;
 
         // Clone the template
         const questionElement = template.content.cloneNode(true);
-        const questionItem = questionElement.querySelector('.question-item');
+        const questionCard = questionElement.querySelector('.question-card');
 
         // Set question index and number
-        questionItem.dataset.questionIndex = newIndex;
-        questionItem.querySelector('.question-number').textContent = newIndex;
+        questionCard.dataset.questionIndex = newIndex;
+        questionCard.querySelector('.question-number').textContent = `Question ${newIndex}`;
 
         // Update input names with proper indexing
-        questionItem.querySelectorAll('input, select').forEach(input => {
+        questionCard.querySelectorAll('input, select').forEach(input => {
             if (input.name) {
                 input.name = input.name.replace('[]', `[${newIndex}]`);
             }
@@ -169,10 +336,10 @@
     }
 
     function renumberQuestions() {
-        const questions = document.querySelectorAll('.question-item');
+        const questions = document.querySelectorAll('.question-card');
         questions.forEach((item, index) => {
             const newIndex = index + 1;
-            item.querySelector('.question-number').textContent = newIndex;
+            item.querySelector('.question-number').textContent = `Question ${newIndex}`;
             item.dataset.questionIndex = newIndex;
             // Update all input/select names inside this question
             item.querySelectorAll('input, select').forEach(input => {
@@ -184,11 +351,11 @@
     }
 
     function removeQuestion(button) {
-        const questionItem = button.closest('.question-item');
-        questionItem.remove();
+        const questionCard = button.closest('.question-card');
+        questionCard.remove();
 
         // Show no questions message if no questions left
-        const questions = document.querySelectorAll('.question-item');
+        const questions = document.querySelectorAll('.question-card');
         if (questions.length === 0) {
             document.getElementById('noQuestionsMessage').style.display = 'block';
         } else {
@@ -197,8 +364,8 @@
     }
 
     function handleQuestionTypeChange(select) {
-        const questionItem = select.closest('.question-item');
-        const choiceOptionsSection = questionItem.querySelector('.choice-options-section');
+        const questionCard = select.closest('.question-card');
+        const choiceOptionsSection = questionCard.querySelector('.choice-options-section');
 
         if (select.value === 'choice') {
             choiceOptionsSection.style.display = 'block';
@@ -208,14 +375,14 @@
     }
 
     function addChoiceOption(button) {
-        const questionItem = button.closest('.question-item');
-        const container = questionItem.querySelector('.choice-options-container');
+        const questionCard = button.closest('.question-card');
+        const container = questionCard.querySelector('.choice-options-container');
 
         const optionDiv = document.createElement('div');
         optionDiv.className = 'choice-option-item';
         optionDiv.innerHTML = `
         <div class="input-group">
-            <input type="text" class="form-control choice-option-text" name="questions[${questionItem.dataset.questionIndex}][choices][]" placeholder="Enter option text">
+            <input type="text" class="form-control choice-option-text" name="questions[${questionCard.dataset.questionIndex}][choices][]" placeholder="Enter option text">
             <button type="button" class="btn btn-icon btn-danger" onclick="removeChoiceOption(this)">
                 <i class="fas fa-times"></i>
             </button>
@@ -232,7 +399,7 @@
 
     // Form validation
     document.getElementById('formCreationForm').addEventListener('submit', function (e) {
-        const questions = document.querySelectorAll('.question-item');
+        const questions = document.querySelectorAll('.question-card');
 
         if (questions.length === 0) {
             e.preventDefault();

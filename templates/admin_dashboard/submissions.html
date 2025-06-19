@@ -1,0 +1,281 @@
+{% extends 'base.html' %}
+
+{% block title %}Submissions - {{ form.name }} - The Therapist{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="dashboard-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="dashboard-title">Form Submissions</h1>
+                <p class="text-muted mb-0">{{ form.name }}</p>
+            </div>
+            <div>
+                <a href="{% url 'admin_dashboard:dashboard' %}" class="btn btn-secondary me-2">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+                <a href="{% url 'forms:public_form' form.id %}" class="btn btn-primary">
+                    <i class="fas fa-eye"></i> View Form
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="submissions-section">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="section-title">Submissions ({{ submissions.count }})</h2>
+            {% if submissions %}
+            <div class="submission-stats">
+                <span class="badge bg-primary">{{ submissions.count }} total</span>
+                <span class="badge bg-success">{{ email_submissions_count }} with email</span>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if submissions %}
+        <div class="submissions-list">
+            {% for submission in submissions %}
+            <div class="submission-card mb-4">
+                <div class="submission-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="submission-title">
+                                <i class="fas fa-user me-2"></i>
+                                Submission #{{ forloop.counter }}
+                            </h5>
+                            <p class="submission-meta text-muted mb-0">
+                                <i class="fas fa-clock me-1"></i>
+                                {{ submission.submitted_at|date:"F j, Y \a\t g:i A" }}
+                                {% if submission.email %}
+                                <span class="ms-3">
+                                    <i class="fas fa-envelope me-1"></i>
+                                    {{ submission.email }}
+                                </span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="submission-actions">
+                            <button class="btn btn-sm btn-outline-primary" onclick="toggleSubmission({{ submission.id }})">
+                                <i class="fas fa-eye"></i> View Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="submission-content" id="submission-{{ submission.id }}" style="display: none;">
+                    <div class="answers-list">
+                        {% for answer in submission.answers.all %}
+                        <div class="answer-item">
+                            <div class="answer-question">
+                                <strong>{{ forloop.counter }}. {{ answer.question.text }}</strong>
+                                {% if answer.question.is_mandatory %}
+                                <span class="text-danger">*</span>
+                                {% endif %}
+                            </div>
+                            <div class="answer-response">
+                                {% if answer.text_answer %}
+                                <p class="mb-0">{{ answer.text_answer }}</p>
+                                {% elif answer.choice_answer %}
+                                <span class="badge bg-info">{{ answer.choice_answer.text }}</span>
+                                {% elif answer.range_answer %}
+                                <div class="rating-display">
+                                    <span class="rating-value">{{ answer.range_answer }}/5</span>
+                                    <div class="rating-stars">
+                                        {% for i in "12345" %}
+                                        <i class="fas fa-star {% if forloop.counter <= answer.range_answer %}text-warning{% else %}text-muted{% endif %}"></i>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">No answer provided</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-inbox"></i>
+            </div>
+            <h3 class="empty-state-title">No submissions yet</h3>
+            <p class="empty-state-description">When users submit responses to this form, they will appear here.</p>
+            <a href="{% url 'forms:public_form' form.id %}" class="btn btn-primary">
+                <i class="fas fa-eye"></i> View Form
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        margin-bottom: 2rem;
+    }
+
+    .dashboard-title {
+        color: #2c3e50;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .section-title {
+        color: #2c3e50;
+        font-size: 1.5rem;
+        margin-bottom: 0;
+    }
+
+    .submission-stats {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .submission-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .submission-card:hover {
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .submission-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+        background: #f8f9fa;
+    }
+
+    .submission-title {
+        color: #2c3e50;
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .submission-meta {
+        font-size: 0.9rem;
+    }
+
+    .submission-content {
+        padding: 1.5rem;
+    }
+
+    .answers-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .answer-item {
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 10px;
+        border-left: 4px solid #007bff;
+    }
+
+    .answer-question {
+        margin-bottom: 0.75rem;
+        color: #2c3e50;
+    }
+
+    .answer-response {
+        color: #495057;
+    }
+
+    .rating-display {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .rating-value {
+        font-weight: 600;
+        color: #007bff;
+    }
+
+    .rating-stars {
+        display: flex;
+        gap: 0.25rem;
+    }
+
+    .rating-stars .fa-star {
+        font-size: 0.9rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+
+    .empty-state-icon {
+        width: 80px;
+        height: 80px;
+        background: rgba(108, 117, 125, 0.1);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+    }
+
+    .empty-state-icon i {
+        font-size: 2rem;
+        color: #6c757d;
+    }
+
+    .empty-state-title {
+        color: #2c3e50;
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state-description {
+        color: #6c757d;
+        margin-bottom: 1.5rem;
+    }
+
+    .btn {
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+    }
+
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.5rem 0.75rem;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleSubmission(submissionId) {
+        const content = document.getElementById(`submission-${submissionId}`);
+        const button = event.target.closest('.btn');
+        
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            button.innerHTML = '<i class="fas fa-eye-slash"></i> Hide Details';
+            button.classList.remove('btn-outline-primary');
+            button.classList.add('btn-outline-secondary');
+        } else {
+            content.style.display = 'none';
+            button.innerHTML = '<i class="fas fa-eye"></i> View Details';
+            button.classList.remove('btn-outline-secondary');
+            button.classList.add('btn-outline-primary');
+        }
+    }
+</script>
+{% endblock %} 
