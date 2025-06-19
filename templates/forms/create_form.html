@@ -3,87 +3,95 @@
 {% block title %}Create New Form - The Therapist{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1>Create New Form</h1>
-                <a href="{% url 'admin_dashboard:dashboard' %}" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left"></i> Back to Dashboard
-                </a>
-            </div>
-
-            <form method="post" id="formCreationForm">
-                {% csrf_token %}
-
-                <!-- Form Details Card -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h2 class="mb-0">Form Details</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="form_name" class="form-label">Form Name *</label>
-                            <input type="text" class="form-control" id="form_name" name="name" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="form_description" class="form-label">Description</label>
-                            <textarea class="form-control" id="form_description" name="description" rows="3"></textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Questions Card -->
-                <div class="card mb-4">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h2 class="mb-0">Questions</h2>
-                        <button type="button" class="btn btn-success" onclick="addQuestion()">
-                            <i class="fas fa-plus"></i> Add Question
-                        </button>
-                    </div>
-                    <div class="card-body">
-                        <div id="questionsContainer">
-                            <!-- Questions will be added here dynamically -->
-                        </div>
-                        <div id="noQuestionsMessage" class="text-center py-4">
-                            <i class="fas fa-question-circle fa-2x text-muted mb-3"></i>
-                            <p class="text-muted">No questions added yet. Click "Add Question" to get started.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Save Form
-                    </button>
-                    <a href="{% url 'admin_dashboard:dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
-                </div>
-            </form>
+<div class="container-fluid px-4">
+    <div class="create-form-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="create-form-title">Create New Form</h1>
+            <a href="{% url 'admin_dashboard:dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
         </div>
     </div>
+
+    <form method="post" id="formCreationForm" class="create-form">
+        {% csrf_token %}
+
+        <!-- Form Details Section -->
+        <div class="form-section">
+            <div class="form-section-header">
+                <div class="form-section-icon">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <h2 class="form-section-title">Form Details</h2>
+            </div>
+            <div class="form-section-content">
+                <div class="form-group">
+                    <label for="form_name" class="form-label">Form Name <span class="required">*</span></label>
+                    <input type="text" class="form-control" id="form_name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="form_description" class="form-label">Description</label>
+                    <textarea class="form-control" id="form_description" name="description" rows="3"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Questions Section -->
+        <div class="form-section">
+            <div class="form-section-header">
+                <div class="form-section-icon">
+                    <i class="fas fa-question-circle"></i>
+                </div>
+                <h2 class="form-section-title">Questions</h2>
+                <button type="button" class="btn" onclick="addQuestion()">
+                    <i class="fas fa-plus"></i> Add Question
+                </button>
+            </div>
+            <div class="form-section-content">
+                <div id="questionsContainer">
+                    <!-- Questions will be added here dynamically -->
+                </div>
+                <div id="noQuestionsMessage" class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-question"></i>
+                    </div>
+                    <h3 class="empty-state-title">No questions added yet</h3>
+                    <p class="empty-state-description">Click "Add Question" to start building your form</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn">
+                <i class="fas fa-save"></i> Save Form
+            </button>
+            <a href="{% url 'admin_dashboard:dashboard' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
 </div>
 
 <!-- Question Template (hidden) -->
 <template id="questionTemplate">
-    <div class="question-item card mb-3" data-question-index="">
-        <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start mb-3">
-                <h5 class="card-title mb-0">Question <span class="question-number"></span></h5>
-                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeQuestion(this)">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
+    <div class="question-card" data-question-index="">
+        <div class="question-card-header">
+            <h3 class="question-number">Question <span class="number"></span></h3>
+            <button type="button" class="btn btn-icon btn-danger" onclick="removeQuestion(this)"
+                title="Remove Question">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
 
-            <div class="row">
+        <div class="question-card-content">
+            <div class="row g-4">
                 <div class="col-md-8">
-                    <div class="mb-3">
-                        <label class="form-label">Question Text *</label>
+                    <div class="form-group">
+                        <label class="form-label">Question Text <span class="required">*</span></label>
                         <input type="text" class="form-control question-text" name="questions[][text]" required>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="mb-3">
-                        <label class="form-label">Question Type *</label>
+                    <div class="form-group">
+                        <label class="form-label">Question Type <span class="required">*</span></label>
                         <select class="form-select question-type" name="questions[][type]"
                             onchange="handleQuestionTypeChange(this)" required>
                             <option value="text">Text-based answer</option>
@@ -94,33 +102,30 @@
                 </div>
             </div>
 
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-check">
-                        <input class="form-check-input question-mandatory" type="checkbox"
-                            name="questions[][is_mandatory]">
-                        <label class="form-check-label">
-                            This question is mandatory
-                        </label>
-                    </div>
+            <div class="form-group mt-3">
+                <div class="form-check custom-checkbox">
+                    <input class="form-check-input question-mandatory" type="checkbox" name="questions[][is_mandatory]">
+                    <label class="form-check-label">
+                        This question is mandatory
+                    </label>
                 </div>
             </div>
 
-            <!-- Choice Options Section (initially hidden) -->
-            <div class="choice-options-section mt-3" style="display: none;">
-                <label class="form-label">Choice Options *</label>
+            <!-- Choice Options Section -->
+            <div class="choice-options-section mt-4" style="display: none;">
+                <label class="form-label">Choice Options <span class="required">*</span></label>
                 <div class="choice-options-container">
-                    <div class="choice-option-item mb-2">
+                    <div class="choice-option-item">
                         <div class="input-group">
                             <input type="text" class="form-control choice-option-text" name="questions[][choices][]"
                                 placeholder="Enter option text">
-                            <button type="button" class="btn btn-outline-danger" onclick="removeChoiceOption(this)">
+                            <button type="button" class="btn btn-icon btn-danger" onclick="removeChoiceOption(this)">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
                     </div>
                 </div>
-                <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="addChoiceOption(this)">
+                <button type="button" class="btn btn-secondary btn-sm mt-3" onclick="addChoiceOption(this)">
                     <i class="fas fa-plus"></i> Add Option
                 </button>
             </div>
@@ -207,11 +212,11 @@
         const container = questionItem.querySelector('.choice-options-container');
 
         const optionDiv = document.createElement('div');
-        optionDiv.className = 'choice-option-item mb-2';
+        optionDiv.className = 'choice-option-item';
         optionDiv.innerHTML = `
         <div class="input-group">
             <input type="text" class="form-control choice-option-text" name="questions[${questionItem.dataset.questionIndex}][choices][]" placeholder="Enter option text">
-            <button type="button" class="btn btn-outline-danger" onclick="removeChoiceOption(this)">
+            <button type="button" class="btn btn-icon btn-danger" onclick="removeChoiceOption(this)">
                 <i class="fas fa-times"></i>
             </button>
         </div>

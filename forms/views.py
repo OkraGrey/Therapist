@@ -1,8 +1,12 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
-from .models import Form, Question, ChoiceOption
+from django.core.mail import send_mail
+from django.conf import settings
+from django.http import HttpResponseRedirect
+from django.urls import reverse
+from .models import Form, Question, ChoiceOption, Submission, Answer
 
 # Create your views here.
 
@@ -77,3 +81,131 @@ def create_form(request):
             return redirect("forms:create_form")
 
     return render(request, "forms/create_form.html")
+
+
+def public_form_view(request, form_id):
+    """Display a specific form for public users and handle submissions"""
+    form = get_object_or_404(Form, id=form_id)
+    questions = form.questions.all()  # This will get all questions for the form
+
+    # Prefetch choice options for choice questions to optimize database queries
+    questions = questions.prefetch_related("choices")
+
+    if request.method == "POST":
+        # Handle form submission
+        try:
+            with transaction.atomic():
+                # Get optional email from form
+                email = request.POST.get("email", "").strip()
+
+                # Create submission
+                submission = Submission.objects.create(
+                    form=form, email=email if email else None
+                )
+
+                # Process answers
+                validation_errors = []
+
+                for question in questions:
+                    answer_key = f"answer_{question.id}"
+                    answer_value = request.POST.get(answer_key, "").strip()
+
+                    # Validate mandatory fields
+                    if question.is_mandatory and not answer_value:
+                        validation_errors.append(
+                            f"Question {question.text[:50]}... is required."
+                        )
+                        continue
+
+                    # Create answer based on question type
+                    if question.type == "text":
+                        Answer.objects.create(
+                            submission=submission,
+                            question=question,
+                            text_answer=answer_value,
+                        )
+                    elif question.type == "choice":
+                        try:
+                            choice = ChoiceOption.objects.get(
+                                id=answer_value, question=question
+                            )
+                            Answer.objects.create(
+                                submission=submission,
+                                question=question,
+                                choice_answer=choice,
+                            )
+                        except ChoiceOption.DoesNotExist:
+                            if question.is_mandatory:
+                                validation_errors.append(
+                                    f"Please select a valid option for: {question.text[:50]}..."
+                                )
+                    elif question.type == "range":
+                        try:
+                            range_value = int(answer_value)
+                            if 1 <= range_value <= 5:
+                                Answer.objects.create(
+                                    submission=submission,
+                                    question=question,
+                                    range_answer=range_value,
+                                )
+                            else:
+                                validation_errors.append(
+                                    f"Please select a valid rating (1-5) for: {question.text[:50]}..."
+                                )
+                        except (ValueError, TypeError):
+                            if question.is_mandatory:
+                                validation_errors.append(
+                                    f"Please select a valid rating (1-5) for: {question.text[:50]}..."
+                                )
+
+                # If there are validation errors, rollback and show errors
+                if validation_errors:
+                    raise ValueError("Validation errors occurred")
+
+                # Send confirmation email if email was provided
+                if email and hasattr(settings, "EMAIL_HOST"):
+                    try:
+                        send_mail(
+                            subject=f"Form Submission Confirmation - {form.name}",
+                            message=f"""Thank you for submitting your response to "{form.name}".
+
+Your response has been submitted successfully and will be reviewed.
+
+Best regards,
+The Therapist Team""",
+                            from_email=settings.DEFAULT_FROM_EMAIL
+                            or "noreply@thetherapist.com",
+                            recipient_list=[email],
+                            fail_silently=True,
+                        )
+                    except Exception as e:
+                        # Log email error but don't fail the submission
+                        print(f"Email sending failed: {e}")
+
+                # Redirect to success page
+                return HttpResponseRedirect(
+                    reverse("forms:submission_success", kwargs={"form_id": form_id})
+                )
+
+        except ValueError:
+            # Validation errors occurred
+            for error in validation_errors:
+                messages.error(request, error)
+        except Exception as e:
+            messages.error(
+                request,
+                f"An error occurred while submitting your form. Please try again.",
+            )
+            print(f"Form submission error: {e}")
+
+    context = {
+        "form": form,
+        "questions": questions,
+    }
+    return render(request, "forms/public_form.html", context)
+
+
+def submission_success(request, form_id):
+    """Display submission success page"""
+    form = get_object_or_404(Form, id=form_id)
+    return render(request, "forms/submission_success.html", {"form": form})

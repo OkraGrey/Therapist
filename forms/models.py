@@ -47,3 +47,33 @@ class ChoiceOption(models.Model):
 
     def __str__(self):
         return f"{self.question.text[:30]} - {self.text}"
+
+
+class Submission(models.Model):
+    form = models.ForeignKey(Form, on_delete=models.CASCADE, related_name="submissions")
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    email = models.EmailField(blank=True, null=True)  # Optional email for confirmation
+
+    def __str__(self):
+        return f"{self.form.name} - {self.submitted_at.strftime('%Y-%m-%d %H:%M')}"
+
+
+class Answer(models.Model):
+    submission = models.ForeignKey(
+        Submission, on_delete=models.CASCADE, related_name="answers"
+    )
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    text_answer = models.TextField(blank=True, null=True)
+    choice_answer = models.ForeignKey(
+        ChoiceOption, on_delete=models.CASCADE, blank=True, null=True
+    )
+    range_answer = models.PositiveIntegerField(blank=True, null=True)
+
+    def __str__(self):
+        if self.text_answer:
+            return f"{self.question.text[:30]} - {self.text_answer[:30]}"
+        elif self.choice_answer:
+            return f"{self.question.text[:30]} - {self.choice_answer.text}"
+        elif self.range_answer:
+            return f"{self.question.text[:30]} - {self.range_answer}"
+        return f"{self.question.text[:30]} - No answer"

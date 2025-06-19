@@ -3,59 +3,282 @@
 {% block title %}Admin Dashboard - The Therapist{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1>Admin Dashboard</h1>
-                <a href="{% url 'forms:create_form' %}" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Add New Form
-                </a>
-            </div>
+<div class="container-fluid px-4">
+    <div class="dashboard-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="dashboard-title">Admin Dashboard</h1>
+            <a href="{% url 'forms:create_form' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Form
+            </a>
+        </div>
+    </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <h2 class="mb-0">Existing Forms</h2>
-                </div>
-                <div class="card-body">
-                    {% if forms %}
-                    <div class="row">
-                        {% for form in forms %}
-                        <div class="col-md-6 col-lg-4 mb-3">
-                            <div class="card h-100">
-                                <div class="card-body">
-                                    <h5 class="card-title">{{ form.name }}</h5>
-                                    <p class="card-text text-muted">
-                                        {% if form.description %}
-                                        {{ form.description|truncatewords:20 }}
-                                        {% else %}
-                                        No description provided
-                                        {% endif %}
-                                    </p>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <small class="text-muted">
-                                            Created: {{ form.created_at|date:"M d, Y" }}
-                                        </small>
-                                        <a href="#" class="btn btn-sm btn-outline-primary">View</a>
-                                    </div>
-                                </div>
-                            </div>
+    <div class="forms-section">
+        <h2 class="section-title">Existing Forms</h2>
+
+        {% if forms %}
+        <div class="row g-4">
+            {% for form in forms %}
+            <div class="col-md-6 col-lg-4">
+                <div class="form-card">
+                    <div class="form-card-content">
+                        <div class="form-card-icon">
+                            <i class="fas fa-file-alt"></i>
                         </div>
-                        {% endfor %}
+                        <h3 class="form-card-title">{{ form.name }}</h3>
+                        <p class="form-card-description">
+                            {% if form.description %}
+                            {{ form.description|truncatewords:20 }}
+                            {% else %}
+                            No description provided
+                            {% endif %}
+                        </p>
+                        <div class="form-card-meta">
+                            <span class="form-card-date">
+                                <i class="fas fa-calendar-alt"></i>
+                                {{ form.created_at|date:"M d, Y" }}
+                            </span>
+                        </div>
+                        <div class="form-card-actions">
+                            <button class="btn btn-copy" onclick="copyFormLink({{ form.id }}, this)"
+                                id="copyBtn_{{ form.id }}">
+                                <i class="fas fa-link"></i> Copy Link
+                            </button>
+                            <a href="{% url 'forms:public_form' form.id %}" class="btn btn-view">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                        </div>
                     </div>
-                    {% else %}
-                    <div class="text-center py-5">
-                        <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
-                        <h4 class="text-muted">No forms created yet</h4>
-                        <p class="text-muted">Get started by creating your first form</p>
-                        <a href="{% url 'forms:create_form' %}" class="btn btn-primary">
-                            <i class="fas fa-plus"></i> Create Your First Form
-                        </a>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-file-medical"></i>
+            </div>
+            <h3 class="empty-state-title">No forms created yet</h3>
+            <p class="empty-state-description">Get started by creating your first therapy form</p>
+            <a href="{% url 'forms:create_form' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Create Your First Form
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Toast notification for copy feedback -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="copyToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-body d-flex align-items-center">
+            <i class="fas fa-check-circle text-success me-2"></i>
+            Link copied to clipboard!
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        margin-bottom: 2rem;
+    }
+
+    .dashboard-title {
+        color: #2c3e50;
+        font-weight: 600;
+    }
+
+    .section-title {
+        color: #2c3e50;
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .form-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .form-card-content {
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .form-card-icon {
+        width: 50px;
+        height: 50px;
+        background: rgba(0, 123, 255, 0.1);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+
+    .form-card-icon i {
+        font-size: 1.5rem;
+        color: #007bff;
+    }
+
+    .form-card-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-card-description {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+        flex-grow: 1;
+    }
+
+    .form-card-meta {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-bottom: 1rem;
+    }
+
+    .form-card-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: auto;
+    }
+
+    .btn-copy,
+    .btn-view {
+        flex: 1;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .btn-copy {
+        background: linear-gradient(135deg, #f8d7da, #f5c2c7);
+        border: none;
+        color: #842029;
+    }
+
+    .btn-copy:hover {
+        background: linear-gradient(135deg, #f5c2c7, #f8d7da);
+        transform: translateY(-2px);
+    }
+
+    .btn-copy.copied {
+        background: linear-gradient(135deg, #d1e7dd, #badbcc);
+        color: #0f5132;
+    }
+
+    .btn-view {
+        background: linear-gradient(135deg, #e2e3e5, #d3d4d5);
+        border: none;
+        color: #41464b;
+    }
+
+    .btn-view:hover {
+        background: linear-gradient(135deg, #d3d4d5, #e2e3e5);
+        transform: translateY(-2px);
+    }
+
+    .toast {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .toast-body {
+        padding: 1rem;
+        font-weight: 500;
+    }
+
+    .toast-body i {
+        font-size: 1.25rem;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .toast.show {
+        animation: fadeInUp 0.3s ease forwards;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function copyFormLink(formId, button) {
+        const baseUrl = window.location.origin;
+        const formUrl = `${baseUrl}/forms/${formId}/`;
+
+        try {
+            await navigator.clipboard.writeText(formUrl);
+            showCopyFeedback(button);
+        } catch (err) {
+            // Fallback to the old method
+            const tempInput = document.createElement('input');
+            tempInput.value = formUrl;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showCopyFeedback(button);
+        }
+    }
+
+    function showCopyFeedback(button) {
+        // Update button state
+        const originalHtml = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+        button.classList.add('copied');
+
+        // Show toast notification
+        const toast = document.getElementById('copyToast');
+        const bsToast = new bootstrap.Toast(toast, {
+            delay: 2000
+        });
+        bsToast.show();
+
+        // Reset button after delay
+        setTimeout(() => {
+            button.innerHTML = originalHtml;
+            button.classList.remove('copied');
+        }, 2000);
+    }
+
+    // Initialize all toasts
+    document.addEventListener('DOMContentLoaded', function () {
+        const toastElList = [].slice.call(document.querySelectorAll('.toast'));
+        toastElList.map(function (toastEl) {
+            return new bootstrap.Toast(toastEl);
+        });
+    });
+</script>
 {% endblock %}
